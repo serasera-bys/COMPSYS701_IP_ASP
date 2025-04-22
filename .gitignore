@@ -1,0 +1,11 @@
+*.rpt
+*.bak
+*.qws
+
+db/
+incremental_db/
+simulation/
+timing/
+testbench/
+output_files/
+greybox_tmp/

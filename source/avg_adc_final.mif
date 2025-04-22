@@ -1,0 +1,26 @@
+-- avg_adc_final.mif : average 8 ADC samples via NoC
+WIDTH=32;
+DEPTH=256;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+    00 : 40600000;  -- LDR  R6, #0       ; sum ← 0
+    01 : 40700000;  -- LDR  R7, #0       ; count ← 0
+    02 : 40100008;  -- LDR  R1, #8       ; loop limit ← 8
+
+    03 : B7200000;  -- LSIP R2           ; read ADC via NoC → R2
+    04 : F8620000;  -- ADD  R6, R6, R2   ; sum += R2
+    05 : 78770001;  -- ADD  R7, R7, #1   ; count++
+    06 : 44110001;  -- SUB  R1, R1, #1   ; limit--
+    07 : 54000009;  -- SZ #09    ; if limit==0 → PC←0x09 (exit)
+    08 : 58000002;  -- JMP #02   ; else (Z=0)      → PC←0x02 (loop)
+
+    09 : 78060000;  -- ADD  R0, R6, #0   ; MOV R0, sum
+    0A : 6A000003;  -- SRES R0, #3       ; SHRA R0, #3 → average
+    0B : 42004000;  -- STR  R0, #$4000   ; store average
+    0C : 5800000C;  -- JMP  #0C          ; idle at 0x0C
+
+    [0D..FF] : 00000000; -- NOOP padding
+END;

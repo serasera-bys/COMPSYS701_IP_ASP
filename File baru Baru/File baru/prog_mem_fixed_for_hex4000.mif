@@ -1,0 +1,22 @@
+WIDTH=32;
+DEPTH=256;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+    00 : 34000000;  -- LDR R6, #0
+    01 : 34180000;  -- LDR R7, #0
+    02 : 58000003;  -- LSIP R2
+    03 : 50183000;  -- ADD R6, R6, R2
+    04 : 501C3001;  -- ADD R7, R7, #1
+    05 : 43000008;  -- LDR R1, #8
+    06 : 50102001;  -- SUB R1, R1, R7
+    07 : 62040000;  -- SZ
+    08 : F8183000;  -- JMP Loop ($0002)
+    09 : 40100006;  -- MOV R0, R6
+    0A : 43100003;  -- SHRA R0, #3
+    0B : 5C004000;  -- STR R0, #$4000 (register-immediate)
+    0C : F8000000;  -- JMP $0000 (idle)
+    [0D..FF] : 34000000; -- NOOP padding
+END;
