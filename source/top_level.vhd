@@ -5,7 +5,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.recop_types.all;
-use work.memory_map.all;
+use work.memory_map_pkg.all;
 
 entity top_level is
     port (
@@ -44,17 +44,28 @@ begin
 
     recop: entity work.recop
     port map(
-        clk => clk_internal,
-        reset => reset_internal,
+    -- clock & reset
+    clk        => CLOCK_50,
+    reset      => reset,
 
-        sip => (others => '0'),
+    -- NoC/SIP command (belum dipakai, jadi di-tie ke ‘0’)
+    sip_valid  => '0',
+    sip_data   => (others=>'0'),
+    sip_write  => open,        -- out port, kita tidak gunakan
 
-        xmem_addr => xmem_addr,
-        xmem_out => xmem_out,
-        xmem_in => xmem_in,
-        xmem_write => xmem_write,
-		  ADC_DATA   => adc_data,
-		  ADC_VALID  => adc_valid
+    -- NoC/DPCR response (belum dipakai, jadikan open juga)
+    dpcr_out   => open,
+    dpcr_valid => open,
+
+    -- ADC/NoC input
+    ADC_DATA   => adc_data,
+    ADC_VALID  => adc_valid,
+
+    -- eksternal board I/O (HEX, LED, switch, dll)
+    xmem_addr  => xmem_addr,
+    xmem_in    => xmem_in,
+    xmem_out   => xmem_out,
+    xmem_write => xmem_write
     );
 
     w_peripherals: process (clk_internal, reset_internal) begin

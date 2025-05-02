@@ -1,23 +1,36 @@
--- Zoran Salcic
-
-library ieee;
-use ieee.std_logic_1164.all;
+-- memory_map.vhd
+library ieee; 
+use ieee.std_logic_1164.all; 
+use ieee.numeric_std.all;
+use work.memory_map_pkg.all;
 use work.recop_types.all;
 
-package memory_map is
-    
-    --4096 words of data memory
-    constant dm_addr_start: bit_16 := x"0000";
-    constant dm_addr_end: bit_16 := x"0FFF";
+entity memory_map is
+  port(
+    uaddress : in  bit_16;
+    wren     : in  std_logic;
+    din      : in  bit_16;
+    dout     : out bit_16;
+    xaddress : out bit_16;
+    xwren    : out std_logic;
+    xdin     : out bit_16;
+    xdout    : in  bit_16
+  );
+end entity;
 
-    constant hex_a_addr: bit_16 := x"4000";
-    constant hex_b_addr: bit_16 := x"4001";
-    constant led_addr: bit_16 := x"4100";
-
-    constant switch_addr: bit_16 := x"4200";
-    constant button_addr: bit_16 := x"4300";
-	 
-	 constant adc_base_addr : bit_16 := x"A000";
-
-
-end memory_map;	
+architecture rtl of memory_map is
+begin
+  process(uaddress, wren, din, xdout)
+  begin
+    if unsigned(uaddress) >= unsigned(dm_addr_start) and
+       unsigned(uaddress) <= unsigned(dm_addr_end) then
+      dout      <= din;        -- on-chip RAM
+      xwren     <= '0';
+    else
+      dout      <= xdout;      -- external I/O
+      xwren     <= wren;
+    end if;
+    xaddress <= uaddress;
+    xdin     <= din;
+  end process;
+end architecture;

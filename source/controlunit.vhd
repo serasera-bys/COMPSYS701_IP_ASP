@@ -6,33 +6,35 @@ use work.various_constants.all;
 
 entity control_unit is
     port (
-        clk             : in  bit_1;
-        reset           : in  bit_1;
-        
-        --from datapath
-        z_flag          : in  bit_1;
-        rz_zero         : in  bit_1;
-        addressing_mode : in  bit_2;
-        opcode          : in  bit_6;
-        
-        --to datapath
-        pc_sel          : out bit_2;
-        pc_write        : out bit_1;
-        ir_write        : out bit_1;
-        sop_write       : out bit_1;
-        dpcr_write      : out bit_1;
-        dpcr_sel        : out bit_1;
-        dm_write        : out bit_1;
-        rf_write        : out bit_1;
-        dm_addr_sel     : out bit_2;
-        dm_in_sel       : out bit_2;
-        rf_input_sel    : out bit_3;
-        alu_operation   : out bit_3;
-        alu_op1_sel     : out bit_1;
-        alu_op2_sel     : out bit_1;
-        clr_z_flag      : out bit_1
+    clk            : in  bit_1;
+    reset          : in  bit_1;
+
+    -- status from DP
+    z_flag         : in  bit_1;
+    rz_zero        : in  bit_1;
+    addressing_mode: in  bit_2;
+    opcode         : in  bit_6;
+
+    -- control to DP
+    pc_sel         : out bit_2;
+    pc_write       : out bit_1;
+    ir_write       : out bit_1;
+    rf_write       : out bit_1;
+    dm_addr_sel    : out bit_2;
+    dm_in_sel      : out bit_2;
+    rf_input_sel   : out bit_3;
+    alu_operation  : out bit_3;
+    alu_op1_sel    : out bit_1;
+    alu_op2_sel    : out bit_1;
+    clr_z_flag     : out bit_1;
+    sop_write      : out bit_1;
+	 dm_write       : out bit_1;
+
+    -- NoC registers
+    dpcr_we        : out bit_1;
+    dpcr_sel       : out bit_1
     );
-end control_unit;
+end entity;
 
 architecture Behavioral of control_unit is
     type state_type is (INIT, FETCH, DECODE, EXECUTE);
@@ -51,21 +53,20 @@ begin
     --Combinational Logic
     process(all) --current_state, opcode, z_flag, addressing_mode,reset
     begin
-        pc_sel        <= pc_sel_next;
-        pc_write      <= '0';
-        ir_write      <= '0';
-        sop_write     <= '0';
-        dpcr_write    <= '0';
-        dm_write      <= '0';
-        rf_write      <= '0';
-        dpcr_sel      <= dpcr_sel_r7;
-        dm_addr_sel   <= dm_addr_sel_rx;
-        dm_in_sel     <= dm_in_sel_rx;
-        rf_input_sel  <= rf_input_sel_alu;
-        alu_operation <= alu_idle;
-        alu_op1_sel   <= alu_op1_sel_rx;
-        alu_op2_sel   <= alu_op2_sel_rx;
-        clr_z_flag    <= '0';
+		 pc_sel        <= pc_sel_next;
+		 pc_write      <= '0';
+		 ir_write      <= '0';
+		 rf_write      <= '0';
+		 dm_addr_sel   <= dm_addr_sel_rx;
+		 dm_in_sel     <= dm_in_sel_rx;
+		 rf_input_sel  <= rf_input_sel_alu;
+		 alu_operation <= alu_idle;
+		 alu_op1_sel   <= alu_op1_sel_rx;
+		 alu_op2_sel   <= alu_op2_sel_rx;
+		 clr_z_flag    <= '0';
+		 sop_write     <= '0';
+		 dpcr_we       <= '0';
+		 dpcr_sel      <= dpcr_sel_r7;
 
         case current_state is
 
@@ -82,12 +83,10 @@ begin
                 
             when DECODE =>
             
-                --DECODE state is only needed for loading in the address to data memory during a LDR instruction as the output will arrive in the next cycle
-                case addressing_mode is
-                    when am_direct => dm_addr_sel <= dm_addr_sel_operand;
-                    when others  => dm_addr_sel <= dm_addr_sel_rx;
-                end case;
-                next_state <= EXECUTE;
+					  if addressing_mode = am_direct then
+						 dm_addr_sel <= dm_addr_sel_operand;
+					  end if;
+					  next_state <= EXECUTE;
 
             when EXECUTE=>
                 --Set operand multiplexers
@@ -150,30 +149,21 @@ begin
                         rf_write <= '1';
 
                     when str =>
-                        --if addressing_mode = am_immediate then
-                            --dm_in_sel <= dm_in_sel_operand;
-                        --else
-                            --dm_in_sel <= dm_in_sel_rx;
-                        --end if;
-								
-								
-                        --dm_write <= '1';
-								
 									 dm_write    <= '1';
 
-									 case addressing_mode is
-										  when am_immediate =>
-												dm_in_sel   <= dm_in_sel_operand;
-												dm_addr_sel <= dm_addr_sel_operand; 
-										  when am_direct =>
-												dm_in_sel   <= dm_in_sel_rx;
-												dm_addr_sel <= dm_addr_sel_operand; 
-										  when am_register =>
-												dm_in_sel   <= dm_in_sel_rx;
-												dm_addr_sel <= dm_addr_sel_rz;
-										  when others =>
-												null;
-									 end case;
+									 --case addressing_mode is
+										  --when am_immediate =>
+												--dm_in_sel   <= dm_in_sel_operand;
+												--dm_addr_sel <= dm_addr_sel_operand; 
+										  --when am_direct =>
+												--dm_in_sel   <= dm_in_sel_rx;
+												--dm_addr_sel <= dm_addr_sel_operand; 
+										  --when am_register =>
+												--dm_in_sel   <= dm_in_sel_rx;
+												--dm_addr_sel <= dm_addr_sel_rz;
+										  --when others =>
+												--null;
+									 --end case;
 
                     when jmp =>
                         --pc_write <= '1';
@@ -197,7 +187,7 @@ begin
 						     end if;							
 
                     when datacall => 
-                        dpcr_write <= '1';       
+                        dpcr_we <= '1';       
 
                     when clfz =>
                         clr_z_flag <= '1';
